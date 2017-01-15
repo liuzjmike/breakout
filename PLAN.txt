@@ -1,0 +1,52 @@
+Plan for Breakout Game
+Mike Liu
+Jan 14 2017
+
+1. Variant:
+	I think the Pinball Breakout variant is very interesting. The original Breakout game only has one
+	pattern so players may get tired after a few levels. The pinball elements help introduce a lot of
+	variations to the maps and game pattern, so the players can see something new at every new level.
+	Also, I think it is creative to give the ball health points and let the players control multiple
+	paddles and arms simultaneously. This require the players to put more thoughts into their game-
+	playing strategy reasonably leveraging the level of difficulty.
+
+2. Levels:
+	Player will begin with three lives and get one new life each higher level they get to.
+	Level I: Only normal blocks and power-up blocks
+	Level II: Several barrier blocks will float below the normal and power-up blocks
+	Level III: Barrier blocks live together with other blocks, so they are harder to eliminate
+	Level IV: A huge moving barrier block that can only be cleared by being hit from above for ten times.
+			  Each time it is hit from above it will drop a power-up. Cannon bullet can go throw it but
+			  can only hurt if when hitting from above. Drops a bomb every 3s, paddle length will be
+			  halved for 5s if hit by a bomb. Paddle can only be shorten once, but consecutive hit will
+			  reset the time it is shortened. Gives a lot of points when cleared. This level does not have
+			  the hole to the next level (no next level anyway), clearing the block will also clear the
+			  level.
+
+3. Blocks
+	1) Normal block that is cleared by one hit and give one point.
+	2) Power-up block that takes three hits to be cleared and drops power-up instead of giving points.
+	3) Barrier block that can only be cleared by a hit from above. Gives ten points when cleared.
+
+4. Power-ups
+	1) Cannon: The ball will become a cannon ball the first time it hits the paddle after the paddle is
+	   charged with this power-up and return to normal ball when it hits the paddle for a second time.
+	   Cannon ball will not be be bounced back by blocks and will clear all blocks on its path.
+	2) Spawn another ball on the paddle, which will be launched when space key is pressed
+	3) Lengthen the paddle by a factor of 2 for 5s.
+	4) Double points earned for 5s.
+	
+5. Cheat keys:
+	1) Press number keys to go to corresponding levels
+	2) Press "L" to lengthen the paddle by a factor of 2
+	3) Press "C" to clear all blocks and get the corresponding points
+	4) Press "A" to add a life
+
+6. Extra:
+	There will be a hole at the top of the screen. If the ball goes into the hole, the player will go to
+	the next level regardless of the number of blocks left in the current level. But if the player go to
+	the next before clearing all the blocks in the current level, he/she will be penalized by twice of
+	the total score of the blocks left.
+	This will be an interesting addition because it will change the way people play the game: many people
+	pass the game with only luck, but now in order to get a high score in the game, players
+	need to be use skills and tactics to control whether the ball should go into the hole.

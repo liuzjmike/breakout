@@ -1,23 +1,17 @@
 package breakout;
 
-import java.util.Random;
-
-import javafx.scene.image.Image;
-
 public class PlainBlock extends Block {
-    
-    private static final String[] IMAGES = {"brick2.gif", "brick3.gif"};
-    private static final int POINTS = 1;
+
+    public static final int TOTAL_HIT = 1;
+    public static final int POINTS = 1;
+    public static final String[] IMAGES = {"brick2.gif", "brick3.gif"};
     
     public PlainBlock() {
-        super();
-        int index = new Random().nextInt(IMAGES.length);
-        Image image = new Image(getClass().getClassLoader().getResourceAsStream(IMAGES[index]));
-        setImage(image);
+        super(TOTAL_HIT, POINTS, IMAGES);
     }
 
     @Override
-    public int destroy() {
-        return POINTS;
+    public void hit(Bouncer bouncer) {
+        hit(bouncer, true);
     }
 }

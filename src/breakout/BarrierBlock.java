@@ -4,7 +4,7 @@ public class BarrierBlock extends Block {
 
     public static final int TOTAL_HIT = 1;
     public static final int POINTS = 10;
-    public static final String[] IMAGES = {"brick2.gif", "brick3.gif"};
+    public static final String[] IMAGES = {"brick6.gif", "brick7.gif"};
     
     public BarrierBlock() {
         super(TOTAL_HIT, POINTS, IMAGES);

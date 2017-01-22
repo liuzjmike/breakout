@@ -2,27 +2,40 @@ package breakout;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import javafx.animation.PauseTransition;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
 public class Level {
     
     private Scene scene;
     private Group root;
+    private GameStatus status;
     private Paddle paddle;
+    private Rectangle hole;
     private List<Bouncer> bouncers;
     private List<Block> blocks;
     private List<Powerup> powerups;
-    private int points;
     private int pointMultiple;
     private PauseTransition timeDoublePoint;
     
-    private Level() {}
+    public Level(Scene targetScene, Group targetRoot) {
+        scene = targetScene;
+        root = targetRoot;
+        status = new GameStatus();
+        bouncers = new ArrayList<Bouncer>();
+        blocks = new ArrayList<Block>();
+        powerups = new ArrayList<Powerup>();
+        pointMultiple = 1;
+        timeDoublePoint = new PauseTransition(Duration.seconds(Powerup.DURATION));
+        timeDoublePoint.setOnFinished(e -> pointMultiple = 1);
+    }
     
     public Scene getScene() {
         return scene;
@@ -40,38 +53,69 @@ public class Level {
         return blocks;
     }
     
-    public int getPoints() {
-        return points;
+    public boolean hasHole() {
+        return hole != null;
+    }
+    
+    public Rectangle getHole() {
+        return hole;
+    }
+    
+    public GameStatus getStatus() {
+        return status;
     }
 
     public void step(double secondDelay) {
+        double paddleSpeed = paddle.getSpeed();
+        double paddleX = paddle.getX();
+        if(!(paddleSpeed < 0 && paddleX < 0 || paddleSpeed > 0 && paddleX + getWidth(paddle) > scene.getWidth())) {
+            paddle.step(secondDelay);
+        }
+        
         List<Bouncer> bouncerToRemove = new ArrayList<Bouncer>();
         for(Bouncer bouncer: bouncers) {
             bouncer.move(secondDelay, this);
-            if(bouncer.out(scene.getWidth(), scene.getHeight())) {
+            if(bouncer.inHole()) {
+                status.clear();
+                root.getChildren().remove(bouncer);
+            }
+            else if(bouncer.isDead(scene.getHeight())) {
                 bouncerToRemove.add(bouncer);
             }
         }
         bouncers.removeAll(bouncerToRemove);
         root.getChildren().removeAll(bouncerToRemove);
+        if(bouncers.isEmpty()) {
+            status.addLife(-1);
+            if(status.getLife() <= 0) {
+                status.lose();
+            }
+            reset();
+        }
         
         List<Block> blockToRemove = new ArrayList<Block>();
         for(Block block: blocks) {
             if(block.isDestroyed()) {
                 blockToRemove.add(block);
-                points += block.getPoint() * pointMultiple;
+                status.addPoint(block.getPoint() * pointMultiple);
                 if(block instanceof PowerBlock) {
-                    addPowerup(block);
+                    addPowerup(block, new Powerup());
                 }
+            }
+            else if(block instanceof SuperBlock) {
+                ((SuperBlock)block).step(secondDelay, this);
             }
         }
         blocks.removeAll(blockToRemove);
         root.getChildren().removeAll(blockToRemove);
+        if(status.getLevel() == 4 && blocks.isEmpty()) {
+            status.clear();
+        }
         
         List<Powerup> powerupToRemove = new ArrayList<Powerup>();
         for(Powerup powerup: powerups) {
             powerup.move(secondDelay);
-            if(powerup.getBoundsInLocal().intersects(paddle.getBoundsInLocal())) {
+            if(intersect(powerup, paddle)) {
                powerup.power(this);
                powerupToRemove.add(powerup);
             }
@@ -83,17 +127,160 @@ public class Level {
         root.getChildren().removeAll(powerupToRemove);
     }
     
-    public void addBouncerAtBouncer() {
-        Bouncer bouncer = bouncers.get(0);
-        Bouncer newBouncer = new Bouncer(bouncer.getX(), bouncer.getY());
-        bouncers.add(newBouncer);
-        root.getChildren().add(newBouncer);
+    public void reset() {
+        formatPaddle(paddle);
+        root.getChildren().add(addBouncerOnPaddle());
     }
     
-    private void addPowerup(Block block) {
-        Powerup powerup = new Powerup();
-        powerup.setX(block.getX() + (block.getBoundsInLocal().getWidth()
-                - powerup.getBoundsInLocal().getWidth()) / 2);
+    /**
+     * Modifier. Setup the scene for the level specified and return the Level object
+     * @param scene
+     * @param root
+     * @return
+     */
+    public void initializeLevel(int levelNum) {
+        clear();
+        root.getChildren().add(initializePaddle());
+        root.getChildren().add(addBouncerOnPaddle());
+        status.setLevel(levelNum);
+        root.getChildren().add(status.getStatusText(scene));
+        List<Block> newBlocks;
+        if(levelNum == 4) {
+            newBlocks = initializeBlockLevelFour();
+        } else {
+            root.getChildren().add(initializeHole());
+            if(levelNum == 2) {
+                newBlocks = initializeBlockLevelTwo();
+            }
+            else if(levelNum == 3) {
+                newBlocks = initializeBlockLevelThree();
+            }
+            else {
+                newBlocks = layBlock(6, 5, 1);
+            }
+        }
+        root.getChildren().addAll(newBlocks);
+    }
+    
+    private void clear() {
+        root.getChildren().clear();
+        hole = null;
+        bouncers.clear();
+        blocks.clear();
+        powerups.clear();
+    }
+
+    private Paddle initializePaddle() {
+        paddle = new Paddle();
+        formatPaddle(paddle);
+        return paddle;
+    }
+    
+    private void formatPaddle(Paddle paddle) {
+        paddle.setFitWidth(scene.getWidth() / 5);
+        paddle.setX(scene.getWidth() / 2 - getWidth(paddle) / 2);
+        paddle.setY(scene.getHeight() - getHeight(paddle));
+    }
+    
+    private Rectangle initializeHole() {
+        hole = new Rectangle(scene.getWidth() * 2 / 5, 0, scene.getWidth() / 5, 2);
+        hole.setFill(Color.YELLOW);
+        return hole;
+    }
+
+    private Bouncer addBouncerOnPaddle() {
+        Bouncer bouncer = new Bouncer();
+        bouncer.setX(paddle.getX() + getWidth(paddle) / 2 - getWidth(bouncer) / 2);
+        bouncer.setY(paddle.getY() - getHeight(bouncer));
+        bouncers.add(bouncer);
+        paddle.addBouncer(bouncer);
+        return bouncer;
+    }
+    
+    public void addBouncerAtBouncer() {
+        if(!bouncers.isEmpty()) {
+            Bouncer bouncer = bouncers.get(0);
+            Bouncer newBouncer = new Bouncer(bouncer.getX(), bouncer.getY());
+            bouncers.add(newBouncer);
+            root.getChildren().add(newBouncer);
+        }
+    }
+    
+    private List<Block> layBlock(int numAcross, int numLayer, double topOffset) {
+        double width = scene.getWidth() / numAcross;
+        double height = width / 3.5;
+        for(int layer = 0; layer < numLayer; layer++) {
+            for(int i = 0; i < numAcross; i++) {
+                Block block = getBlock();
+                block.setFitWidth(width);
+                block.setFitHeight(height);
+                block.setX(width * i);
+                block.setY(height * (layer * 1.2 + topOffset));
+                blocks.add(block);
+            }
+        }
+        return blocks;
+    }
+    
+    private Block getBlock() {
+        double flag = Math.random();
+        if(flag <= .2) {
+            return new PowerBlock();
+        } else {
+            return new PlainBlock();
+        }
+    }
+    
+    private List<Block> initializeBlockLevelTwo() {
+        layBlock(7, 4, 1);
+        double width = scene.getWidth() / 7;
+        double height = width / 3.5;
+        for(int i = 0; i < 4; i++) {
+            Block block = new BarrierBlock();
+            block.setFitWidth(width);
+            block.setFitHeight(height);
+            block.setX(width * i * 2);
+            block.setY(height * 8);
+            blocks.add(block);
+        }
+        return blocks;
+    }
+    
+    private List<Block> initializeBlockLevelThree() {
+        layBlock(7, 4, 1);
+        double width = scene.getWidth() / 7;
+        double height = width / 3.5;
+        for(int i = 0; i < 7; i++) {
+            Block block;
+            if(i % 2 == 0) {
+                block = new PowerBlock();
+            } else {
+                block = new BarrierBlock();
+            }
+            block.setFitWidth(width);
+            block.setFitHeight(height);
+            block.setX(width * i);
+            block.setY(height * 5.8);
+            blocks.add(block);
+        }
+        return blocks;
+    }
+    
+    private List<Block> initializeBlockLevelFour() {
+        double width = scene.getWidth() / 3;
+        double height = width / 3.5;
+        Block block = new SuperBlock(this);
+        block.setFitWidth(width);
+        block.setFitHeight(height);
+        block.setX((scene.getWidth() - getWidth(block)) / 2);
+        block.setY(scene.getHeight() / 4);
+        blocks.add(block);
+        return blocks;
+    }
+    
+    public void addPowerup(Block block, Powerup powerup) {
+        powerup.setX(block.getX() + (getWidth(block)
+                - getWidth(powerup)) / 2);
         powerup.setY(block.getY());
         powerups.add(powerup);
         root.getChildren().add(powerup);
@@ -104,83 +291,30 @@ public class Level {
         timeDoublePoint.playFromStart();
     }
     
-    public void handleKeyInput(KeyCode code) {
-        if(!paddle.keyInputHandler(code)) {
+    public void handleKeyPressed(KeyCode code) {
+        if(!paddle.keyPressedHandler(code)) {
             if(code == KeyCode.A) {
-                addBouncerAtBouncer();
+                status.addLife(1);
+            }
+            else if(code == KeyCode.C) {
+                for(Block block: blocks) {
+                    status.addPoint(block.getPoint());
+                }
+                root.getChildren().removeAll(blocks);
+                blocks.clear();
             }
         }
     }
 
-    /**
-     * Modifier. Setup the scene for the level specified and return the Level object
-     * @param scene
-     * @param root
-     * @return
-     */
-    public static Level initializeLevel(Scene scene, Group root, int points, int levelNum) {
-        Level level = new Level();
-        level.scene = scene;
-        level.root = root;
-        double sceneWidth = scene.getWidth();
-        double sceneHeight = scene.getHeight();
-        level.paddle = initializePaddle(root, sceneWidth, sceneHeight);
-        level.bouncers = new ArrayList<Bouncer>();
-        addBouncerOnPaddle(level);
-        level.powerups = new ArrayList<Powerup>();
-        level.points = points;
-        level.pointMultiple = 1;
-        level.timeDoublePoint = new PauseTransition(Duration.seconds(Powerup.DURATION));
-        level.timeDoublePoint.setOnFinished(e -> level.pointMultiple = 1);
-        if(levelNum == 1) {
-            level.blocks = initializeBlocksLevelOne(root, sceneWidth);
-        }
-        else if(levelNum == 2) {
-            level.blocks = initializeBlocksLevelOne(root, sceneWidth);
-        }
-        else if(levelNum == 3) {
-            level.blocks = initializeBlocksLevelOne(root, sceneWidth);
-        }
-        else {
-            level.blocks = initializeBlocksLevelOne(root, sceneWidth);
-        }
-        return level;
+    private double getWidth(Node n) {
+        return n.getBoundsInLocal().getWidth();
     }
     
-    private static Paddle initializePaddle(Group root, double sceneWidth, double sceneHeight) {
-        Paddle paddle = new Paddle();
-        paddle.setFitWidth(sceneWidth / 5);
-        paddle.setX(sceneWidth / 2 - paddle.getBoundsInLocal().getWidth() / 2);
-        paddle.setY(sceneHeight - paddle.getBoundsInLocal().getHeight());
-        root.getChildren().add(paddle);
-        return paddle;
+    private double getHeight(Node n) {
+        return n.getBoundsInLocal().getHeight();
     }
-
-    private static void addBouncerOnPaddle(Level level) {
-        Bouncer bouncer = new Bouncer();
-        bouncer.setX(level.paddle.getX() + level.paddle.getBoundsInLocal().getWidth() / 2
-                - bouncer.getBoundsInLocal().getWidth() / 2);
-        bouncer.setY(level.paddle.getY() - bouncer.getBoundsInLocal().getHeight());
-        level.bouncers.add(bouncer);
-        level.paddle.addBouncer(bouncer);
-        level.root.getChildren().add(bouncer);
-    }
-
-    private static List<Block> initializeBlocksLevelOne(Group root, double sceneWidth) {
-        List<Block> newBlocks = new ArrayList<Block>();
-        double width = sceneWidth / 6;
-        double height = width / 3;
-        for(int layer = 0; layer < 5; layer++) {
-            for(int i = 0; i < 10; i++) {
-                Block block = new PowerBlock();
-                block.setFitWidth(width);
-                block.setFitHeight(height);
-                block.setX(width * i);
-                block.setY(height * layer * 5 / 4);
-                newBlocks.add(block);
-                root.getChildren().add(block);
-            }
-        }
-        return newBlocks;
+    
+    public static boolean intersect(Node a, Node b) {
+        return a.getBoundsInLocal().intersects(b.getBoundsInLocal());
     }
 }

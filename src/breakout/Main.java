@@ -23,116 +23,109 @@ public class Main extends Application {
     public static final int PADDLE_SPEED = 50;
     public static final int BOUNCER_SPEED = 375;
 
-    // some things we need to remember during our game
-    private Scene scene;
-    private Group root;
     private Level level;
-    private int points;
-    //private Paddle paddle;
-    //private List<Bouncer> bouncers;
-    //private List<Block> blocks;
+    Timeline animation;
     
     @Override
     public void start(Stage stage) throws Exception {
-        scene = setupGame(WIDTH, HEIGHT, BACKGROUND);
-        stage.setScene(scene);
         stage.setTitle(TITLE);
+        startWelcome(stage, WIDTH, HEIGHT, BACKGROUND);
         stage.show();
-        KeyFrame frame = new KeyFrame(Duration.millis(MILLISECOND_DELAY),
-                                      e -> step(SECOND_DELAY));
-        Timeline animation = new Timeline();
+        animation = new Timeline();
         animation.setCycleCount(Timeline.INDEFINITE);
-        animation.getKeyFrames().add(frame);
-        animation.play();
     }
-
-    private Scene setupGame(int sceneWidth, int sceneHeight, Paint background) {
-        root = new Group();
-        Scene newScene = new Scene(root, sceneWidth, sceneHeight, background);
-        level = Level.initializeLevel(newScene, root, 0, 1);
-        /*
-        bouncers = new ArrayList<Bouncer>();
-        blocks = new ArrayList<Block>();
-        initializeBlocks(root, sceneWidth, sceneHeight);
-        initializePaddle(root, sceneWidth, sceneHeight);
-        addBouncerOnPaddle(root);
-        */
-        newScene.setOnKeyPressed(e -> handleKeyInput(e.getCode()));
+    
+    private Scene startWelcome(Stage stage, int sceneWidth, int sceneHeight, Paint background) {
+        Scene newScene = new SceneGenerator().getScene(WIDTH, HEIGHT, BACKGROUND, SceneGenerator.WELCOME, 0);
+        newScene.setOnKeyPressed(e -> welcomeKeyInputHandler(e.getCode(), stage));
+        stage.setScene(newScene);
+        return newScene;
+    }
+    
+    private Scene startHelp(Stage stage, int sceneWidth, int sceneHeight, Paint background) {
+        Scene newScene = new SceneGenerator().getScene(WIDTH, HEIGHT, BACKGROUND, SceneGenerator.HELP, 0);
+        newScene.setOnKeyPressed(e -> helpKeyInputHandler(e.getCode(), stage));
+        stage.setScene(newScene);
         return newScene;
     }
 
-    private void step(double secondDelay) {
-        level.step(secondDelay);
-        /*
-        List<Bouncer> toRemove = new ArrayList<Bouncer>();
-        for(int i = 0; i < bouncers.size(); i++) {
-            Bouncer bouncer = bouncers.get(i);
-            List<ImageView> barriers = new ArrayList<ImageView>();
-            barriers.add(paddle);
-            bouncer.move(secondDelay, level);
-            if(bouncer.out(scene.getWidth(), scene.getHeight())) {
-                toRemove.add(bouncer);
-            }
-        }
-        bouncers.removeAll(toRemove);
-        ((Group)scene.getRoot()).getChildren().removeAll(toRemove);
-        */
+    private Scene startGame(Stage stage, int sceneWidth, int sceneHeight, Paint background) {
+        Group root = new Group();
+        Scene newScene = new Scene(root, sceneWidth, sceneHeight, background);
+        level = new Level(newScene, root);
+        level.initializeLevel(1);
+        newScene.setOnKeyPressed(e -> handleKeyPressed(e.getCode()));
+        newScene.setOnKeyReleased(e -> handleKeyReleased(e.getCode()));
+        KeyFrame frame = new KeyFrame(Duration.millis(MILLISECOND_DELAY),
+                e -> step(SECOND_DELAY, stage));
+        animation.getKeyFrames().clear();
+        animation.getKeyFrames().add(frame);
+        animation.play();
+        stage.setScene(newScene);
+        return newScene;
     }
-    
-    /*
-    private void initializeBlocks(Group root, int sceneWidth, int sceneHeight) {
-        double width = sceneWidth / 10;
-        double height = width / 3;
-        for(int layer = 0; layer < 5; layer++) {
-            for(int i = 0; i < 10; i++) {
-                Block block = new PlainBlock();
-                block.setFitWidth(width);
-                block.setFitHeight(height);
-                block.setX(width * i);
-                block.setY(height * layer * 5 / 4);
-                blocks.add(block);
-                root.getChildren().add(block);
-            }
-        }
-    }
-    
-    private void initializePaddle(Group root, int sceneWidth, int sceneHeight) {
-        paddle = new Paddle(PADDLE_SPEED, BOUNCER_SPEED);
-        paddle.setFitWidth(sceneWidth / 5);
-        paddle.setX(sceneWidth / 2 - paddle.getBoundsInLocal().getWidth() / 2);
-        paddle.setY(sceneHeight - paddle.getBoundsInLocal().getHeight());
-        root.getChildren().add(paddle);
-    }
-    
-    private void addBouncerOnPaddle(Group root) {
-        Bouncer bouncer = new Bouncer();
-        bouncer.setX(paddle.getX() + paddle.getBoundsInLocal().getWidth() / 2
-                - bouncer.getBoundsInLocal().getWidth() / 2);
-        bouncer.setY(paddle.getY() - bouncer.getBoundsInLocal().getHeight());
-        bouncers.add(bouncer);
-        paddle.addBouncer(bouncer);
-        root.getChildren().add(bouncer);
-    }
-    
-    private void addBouncerAtBouncer() {
-        Bouncer bouncer = new Bouncer(bouncers.get(0));
-        bouncers.add(bouncer);
-        ((Group)scene.getRoot()).getChildren().add(bouncer);
-    }
-    */
 
-    private void handleKeyInput(KeyCode code) {
+    private Scene end(Stage stage, boolean won, int point) {
+        animation.stop();
+        Scene newScene;
+        if(won) {
+            newScene = new SceneGenerator().getScene(WIDTH, HEIGHT, BACKGROUND, SceneGenerator.WIN, point);
+        } else {
+            newScene = new SceneGenerator().getScene(WIDTH, HEIGHT, BACKGROUND, SceneGenerator.LOSE, point);
+        }
+        newScene.setOnKeyPressed(e -> endKeyInputHandler(e.getCode(), stage));
+        stage.setScene(newScene);
+        return newScene;
+    }
+
+    private void step(double secondDelay, Stage stage) {
+        level.step(secondDelay);
+        if(level.getStatus().isClear()) {
+            int levelNum = level.getStatus().getLevel();
+            if(levelNum == 4) {
+                end(stage, true, level.getStatus().getPoint());
+            } else {
+                level.initializeLevel(levelNum + 1);
+                level.getStatus().addLife(1);
+            }
+        }
+        else if(level.getStatus().isLost()) {
+            end(stage, false, level.getStatus().getPoint());
+        }
+    }
+
+    private void handleKeyPressed(KeyCode code) {
         if(code == KeyCode.DIGIT1 || code == KeyCode.DIGIT2
                 || code == KeyCode.DIGIT3 || code == KeyCode.DIGIT4) {
-            changeLevel(Integer.parseInt(code.getName()));
+            level.initializeLevel((Integer.parseInt(code.getName())));
         } else {
-            level.handleKeyInput(code);
+            level.handleKeyPressed(code);
+        }
+    }
+    
+    private void handleKeyReleased(KeyCode code) {
+        level.getPaddle().keyReleasedHandler(code);
+    }
+
+    private void welcomeKeyInputHandler(KeyCode code, Stage stage) {
+        if(code == KeyCode.H) {
+            startHelp(stage, WIDTH, HEIGHT, BACKGROUND);
+        }
+        else if(code == KeyCode.SPACE) {
+            startGame(stage, WIDTH, HEIGHT, BACKGROUND);
         }
     }
 
-    private void changeLevel(int levelNum) {
-        root.getChildren().clear();
-        level = Level.initializeLevel(scene, root, level.getPoints(), levelNum);
+    private void helpKeyInputHandler(KeyCode code, Stage stage) {
+        if(code == KeyCode.Q) {
+            startWelcome(stage, WIDTH, HEIGHT, BACKGROUND);
+        }
+    }
+
+    private void endKeyInputHandler(KeyCode code, Stage stage) {
+        if(code == KeyCode.SPACE) {
+            startWelcome(stage, WIDTH, HEIGHT, BACKGROUND);
+        }
     }
 
     public static void main(String[] args) {

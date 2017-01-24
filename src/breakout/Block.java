@@ -4,7 +4,9 @@ import java.util.Random;
 
 public abstract class Block extends GameObject {
     
+    //Made protected to allow its subclasses to add more complicated condition for dealing with damage
     protected int hitLeft;
+    
     private final int points;
     
     protected Block(int totalHit, int points, String[] images) {

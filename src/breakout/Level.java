@@ -12,6 +12,12 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
+/**
+ * The class that is used to manage the game-playing scene. It holds all the objects in the scene,
+ * manages their movement and remove them when they are "destroyed"
+ * @author Mike Liu
+ *
+ */
 public class Level {
     
     private Scene scene;

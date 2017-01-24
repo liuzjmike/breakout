@@ -24,7 +24,7 @@ public class Main extends Application {
     public static final int BOUNCER_SPEED = 375;
 
     private Level level;
-    Timeline animation;
+    private Timeline animation;
     
     @Override
     public void start(Stage stage) throws Exception {

@@ -23,8 +23,7 @@ public class SceneGenerator {
             + "top of the screen to go to the next level. In the final level, you must destroy the"
             + "super block to win the game. Good luck!";
 
-    public SceneGenerator() {
-    }
+    public SceneGenerator() {}
 
     public Scene getScene(double width, double height, Paint fill, int type, int point) {
         Parent root;
@@ -56,6 +55,15 @@ public class SceneGenerator {
         return root;
     }
 
+    /**
+     * Generates a group that contains two texts with content being main and sub
+     * Texts are formated in standardized way
+     * @param width width of the scene that the group will belong to
+     * @param height height of the scene that the group will belong to
+     * @param main
+     * @param sub
+     * @return
+     */
     private Group getGroup(double width, double height, String main, String sub) {
         Group root = new Group();
         Text mainText = getText(main, MAIN_TEXT_FONT);

@@ -11,7 +11,7 @@ public class SuperBlock extends Block {
     public static final int SPEED = 100;
     public static final int BOMB_INTERVAL = 5;
     
-    Level level;
+    private Level level;
     private int speed;
     private boolean vulnerable;
     private PauseTransition timeInvulnerable, timeBomb;

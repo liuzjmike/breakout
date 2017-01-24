@@ -34,6 +34,8 @@ public class SuperBlock extends Block {
         double thisX = getX();
         double thisWidth = getBoundsInLocal().getWidth();
         boolean hitFromAbove = bouncer.getSpeedY() > 0 && bouncerCenter > thisX && bouncerCenter < thisX + thisWidth;
+        
+        //Avoid multiple count of damage when cannon go through the block
         if(hitFromAbove && vulnerable) {
             hitLeft--;
             vulnerable = false;

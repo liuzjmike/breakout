@@ -54,3 +54,8 @@ extending the Powerup class and override power().
 Cons: I could have made each type of powerup a subclass of Powerup and randomly choose one when needed, which will make the code
 look cleaner and allow other developers to use each type of powerup directly. I might have actually made a bad decision for
 this implementation.
+
+### Assumptions or Decisions Made to Simplify or Resolve Ambiguities
+In Block.bounceBack(), the math is largely simplified so the method works in a majority of cases but can cause unnatural bouncing
+at some colliding position and angle. But a full computation for the correct bouncing angle to too complicated to implement due
+to the limited time for the project. 

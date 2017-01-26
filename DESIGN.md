@@ -44,13 +44,14 @@ Cons: Making Level abstract and creating a subclass for each level may make the 
 
 ### Make Block class abstract and create a subclass for each type of block
 Gives each type of block a understandable name instead of just different values for instance variables. Also makes it a lot
-easier to add new types of blocks such as the BarrierBlock.
+easier to add new types of blocks such as the BarrierBlock.  
+There is no obvious drawback.
 
 ### The way to initialize powerups
 My implementation initializes four most basic types of powerups by assigning a type at random at construction time and decide
 their function at runtime depending on their type. This is because these powerups were meant to be generated in random types
 when I designed the game, and this implementation also preserves the possibility of adding new types of powerups by simply
-extending the Powerup class and override power().
+extending the Powerup class and override power().  
 Cons: I could have made each type of powerup a subclass of Powerup and randomly choose one when needed, which will make the code
 look cleaner and allow other developers to use each type of powerup directly. I might have actually made a bad decision for
 this implementation.

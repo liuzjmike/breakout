@@ -20,8 +20,6 @@ public class Main extends Application {
     public static final int FRAMES_PER_SECOND = 60;
     public static final double MILLISECOND_DELAY = 1000 / FRAMES_PER_SECOND;
     public static final double SECOND_DELAY = 1.0 / FRAMES_PER_SECOND;
-    public static final int PADDLE_SPEED = 50;
-    public static final int BOUNCER_SPEED = 375;
 
     private Level level;
     private Timeline animation;

@@ -1,3 +1,6 @@
+// This entire file is part of my masterpiece.
+// Mike Liu
+
 package breakout;
 
 import java.util.ArrayList;
@@ -58,34 +61,29 @@ public class Paddle extends GameObject {
     public boolean keyPressedHandler(KeyCode code) {
         if (code == KeyCode.RIGHT) {
             speed = PADDLE_SPEED;
-            return true;
         }
         else if (code == KeyCode.LEFT) {
             speed = -PADDLE_SPEED;
-            return true;
         }
         else if(code == KeyCode.SPACE) {
-            for(int i = 0; i < bouncers.size(); i++) {
-                Bouncer bouncer = bouncers.get(i);
+            for(Bouncer bouncer: bouncers) {
                 bouncer.launch(Math.PI / 2 * (Math.random() + 0.5));
-                bouncers.remove(bouncer);
             }
-            return true;
+            bouncers.clear();
         }
         else if(code == KeyCode.L) {
             setFitWidth(getBoundsInLocal().getWidth() * 2);
-            return true;
         }
         else if(code == KeyCode.S) {
             setFitWidth(getBoundsInLocal().getWidth() / 2);
-            return true;
         }
         else if(code == KeyCode.H && !catchBouncer) {
             catchBouncer = true;
             catchTime.play();
-            return true;
+        } else {
+            return false;
         }
-        return false;
+        return true;
     }
 
     public void keyReleasedHandler(KeyCode code) {
